@@ -3,7 +3,7 @@ version: ${project.version}
 main: com.tdm.tournament.TournamentPlugin
 api-version: '26.1.2'
 author: Speedymr01
-description: Orchestrates tournaments using TDM and Spleef APIs
+description: Orchestrates tournaments using any minigame plugin that implements the MinigameProvider interface
 
 softdepend:
   - TeamDeathmatch

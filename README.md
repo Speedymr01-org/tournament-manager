@@ -40,6 +40,16 @@ Minigame providers (Spleef, TeamDeathmatch, etc.) are discovered at runtime — 
 6. Plugin advances bracket / updates Swiss standings.
 7. **Champion** crowned, stats recorded.
 
+## Player Disconnect Handling
+
+If a player disconnects while their match is in progress, their team **forfeits** automatically. The other team is awarded the win and advances in the bracket. This prevents tournaments from stalling due to player drops.
+
+## Configuration
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `verbose-logging` | `true` | Enables detailed console output for debugging tournament lifecycle events |
+
 ## GUIs
 
 ### Admin
@@ -67,6 +77,11 @@ Minigame providers (Spleef, TeamDeathmatch, etc.) are discovered at runtime — 
 | `/tournament leave <id>` | Leave a tournament |
 | `/tournament start <id>` | Start a tournament (admin) |
 | `/tournament cancel <id>` | Cancel a tournament (admin) |
+| `/tournament delete <id>` | Delete a tournament (admin) |
+| `/tournament list` | List all tournaments (admin) |
+| `/tournament view` | Open player tournament list |
+| `/tournament matches` | View your current/upcoming matches |
+| `/tournament history` | View your past match history |
 
 ## Permissions
 
