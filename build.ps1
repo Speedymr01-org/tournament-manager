@@ -1,7 +1,7 @@
 # Build script for Tournament Manager plugin
 # Use local JDK 25 if JAVA_HOME is not already set (e.g., in CI)
 if (-not $env:JAVA_HOME) {
-    $env:JAVA_HOME = "C:\Users\Matthew\OneDrive\Desktop\mc-plugins\jdk25"
+    $env:JAVA_HOME = "C:\Users\Matthew\OneDrive\Programming\mc-plugins\jdk25"
 }
 
 $mvnArgs = @("clean", "package")
