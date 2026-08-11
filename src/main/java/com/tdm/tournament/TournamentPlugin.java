@@ -10,6 +10,7 @@ import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -47,6 +48,10 @@ public class TournamentPlugin extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+
+        // bStats
+        int pluginId = 33302;
+        new Metrics(this, pluginId);
 
         // Discover minigame providers via ServicesManager
         discoverProviders();

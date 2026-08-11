@@ -25,6 +25,12 @@ TournamentManager is a Paper plugin that adds tournament-level organization on t
 
 Minigame providers (Spleef, TeamDeathmatch, etc.) are discovered at runtime — no compile-time dependency.
 
+## Version History
+
+| Version | Changes |
+|---------|---------|
+| **0.3.0** | Added **verbose logging** (configurable via `config.yml`) for debugging tournament lifecycle events. Added **Start Next Match** button in admin GUI. Fixed admin GUI close behavior to navigate to parent menu instead of closing inventory. Manage Tournaments list now navigates to main menu when barrier item is clicked. Tie matches now reset to `PENDING` instead of `FINISHED` so they can be replayed. Fixed `clearMatches` to use a mutable list. Added support for **2-team** tournaments. Fixed duplicate item sets in `renderCreateMenu`. Fixed render order so GUI buttons aren't cleared by `fillBorders`. Fixed `saveDefaultConfig` crash by shipping a default `config.yml`. Added **Modrinth publishing** via GitHub Actions workflow. |
+
 ## Supported Formats
 
 - **Single Elimination** — classic bracket, lose and you're out.
