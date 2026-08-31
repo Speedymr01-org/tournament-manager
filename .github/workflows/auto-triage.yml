@@ -41,7 +41,7 @@ jobs:
             const reason = reasonMatch ? reasonMatch[1].trim() : '';
             
             // Build prompt for AI
-            const prompt = `You are a triage bot for Minecraft Paper plugin issues. Analyze this issue and return ONLY a JSON object with these fields: priority (Urgent/High/Medium/Low), effort (High/Medium/Low, only for bugs/features), typeLabel (bug/enhancement/question/null, only if not already labeled). Issue title: ${title}. Issue body: ${body}. ${isVersionUpdate ? 'Reason for update: ' + reason + '.' : ''} ${userPriority ? 'User suggested priority: ' + userPriority + '.' : ''} ${userEffort ? 'User suggested effort: ' + userEffort + '.' : ''} Is version update: ${isVersionUpdate}. Rules: Urgent for crashes/data loss/security/completely broken. High for major broken features/community events/integral functionality/no workaround. Medium for standard issues with moderate impact. Low for cosmetic/minor/nice-to-have. User input is a hint but you decide independently. Consider context like community servers/events/production use. Return ONLY valid JSON.`;
+            const prompt = `You are a triage bot for Minecraft Paper plugin issues. Analyze this issue and return ONLY a JSON object with these fields: priority (Urgent/High/Medium/Low), effort (High/Medium/Low, only for bugs/features), typeLabel (bug/enhancement/question/null, only if not already labeled), explanation (brief 1-2 sentence explanation of your decisions). Issue title: ${title}. Issue body: ${body}. ${isVersionUpdate ? 'Reason for update: ' + reason + '.' : ''} ${userPriority ? 'User suggested priority: ' + userPriority + '.' : ''} ${userEffort ? 'User suggested effort: ' + userEffort + '.' : ''} Is version update: ${isVersionUpdate}. Rules: Urgent for crashes/data loss/security/completely broken. High for major broken features/community events/integral functionality/no workaround. Medium for standard issues with moderate impact. Low for cosmetic/minor/nice-to-have. User input is a hint but you decide independently. Consider context like community servers/events/production use. Return ONLY valid JSON.`;
             
             let priority = 'Medium';
             let effort = 'Low';
@@ -74,7 +74,7 @@ jobs:
                 
                 const data = await response.json();
                 const content = data.message.content;
-                console.log('AI response: ' + content);
+                console.log('AI raw response: ' + content);
                 
                 // Extract JSON from response (handle markdown code blocks)
                 let jsonStr = content;
@@ -97,7 +97,18 @@ jobs:
                 }
                 
                 usedAI = true;
-                console.log('AI succeeded: priority=' + priority + ', effort=' + effort + ', type=' + typeLabel);
+                console.log('AI triage result: priority=' + priority + ', effort=' + effort + ', type=' + typeLabel);
+                console.log('AI explanation: ' + (result.explanation || 'No explanation provided'));
+                
+                // Comment explanation on issue
+                if (result.explanation) {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.issue.number,
+                    body: '**AI Triage:** ' + result.explanation
+                  });
+                }
                 break;
                 
               } catch (error) {
