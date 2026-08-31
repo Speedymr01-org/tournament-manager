@@ -19,8 +19,7 @@ jobs:
   triage:
     runs-on: ubuntu-latest
     steps:
-      - name: Check for Version Update label
-        id: check-labels
+      - name: Triage Issue
         uses: actions/github-script@v7
         with:
           script: |
@@ -30,19 +29,9 @@ jobs:
             // Skip if has Version Update label
             if (labels.includes('Version Update')) {
               console.log('Issue has Version Update label, skipping triage');
-              core.setOutput('result', 'skip');
               return;
             }
             
-            core.setOutput('result', 'continue');
-
-      - name: Triage Issue
-        if: steps.check-labels.outputs.result != 'skip'
-        uses: actions/github-script@v7
-        id: triage
-        with:
-          script: |
-            const issue = context.payload.issue;
             const title = issue.title.toLowerCase();
             const body = (issue.body || '').toLowerCase();
             const content = `${title} ${body}`;
@@ -68,8 +57,7 @@ jobs:
             }
             
             // Determine type label
-            const existingLabels = issue.labels.map(l => l.name);
-            if (!existingLabels.includes('bug') && !existingLabels.includes('enhancement') && !existingLabels.includes('question')) {
+            if (!labels.includes('bug') && !labels.includes('enhancement') && !labels.includes('question')) {
               if (content.includes('bug') || content.includes('error') || content.includes('fail') || content.includes('broken')) {
                 typeLabel = 'bug';
               } else if (content.includes('feature') || content.includes('enhancement') || content.includes('add')) {
@@ -79,38 +67,24 @@ jobs:
               }
             }
             
-            core.setOutput('priority', priority);
-            core.setOutput('effort', effort);
-            core.setOutput('typeLabel', typeLabel || '');
+            console.log(`Triage: priority=${priority}, effort=${effort}, type=${typeLabel}`);
             
-            console.log(`Triage results: priority=${priority}, effort=${effort}, type=${typeLabel}`);
-
-      - name: Add Type Label
-        if: steps.triage.outputs.typeLabel != '' && steps.check-labels.outputs.result != 'skip'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: [steps.triage.outputs.typeLabel]
-            });
-
-      - name: Set Priority and Effort Fields
-        if: steps.check-labels.outputs.result != 'skip'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const priority = steps.triage.outputs.priority;
-            const effort = steps.triage.outputs.effort;
+            // Add type label if determined
+            if (typeLabel) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [typeLabel]
+              });
+              console.log(`Added label: ${typeLabel}`);
+            }
             
-            // Field IDs from organization
+            // Set Priority and Effort fields via REST API
             const PRIORITY_FIELD_ID = 46329093;
             const EFFORT_FIELD_ID = 46329096;
             
             try {
-              // Set both fields via REST API
               await github.rest.request('POST /repos/{owner}/{repo}/issues/{issue_number}/issue-field-values', {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -126,7 +100,6 @@ jobs:
                   }
                 ]
               });
-              
               console.log(`Set priority to ${priority} and effort to ${effort}`);
             } catch (error) {
               console.log(`Could not set issue fields: ${error.message}`);
