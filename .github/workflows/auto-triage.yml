@@ -1,0 +1,134 @@
+name: Auto-Triage Issues
+description: Automatically assesses issues and sets Priority and Effort fields (skips Version Update issues)
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to triage"
+        required: true
+        type: string
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for Version Update label
+        id: check-labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const labels = issue.labels.map(l => l.name);
+            
+            // Skip if has Version Update label
+            if (labels.includes('Version Update')) {
+              console.log('Issue has Version Update label, skipping triage');
+              core.setOutput('result', 'skip');
+              return;
+            }
+            
+            core.setOutput('result', 'continue');
+
+      - name: Triage Issue
+        if: steps.check-labels.outputs.result != 'skip'
+        uses: actions/github-script@v7
+        id: triage
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = issue.title.toLowerCase();
+            const body = (issue.body || '').toLowerCase();
+            const content = `${title} ${body}`;
+            
+            let priority = 'Medium';
+            let effort = 'Low';
+            let typeLabel = null;
+            
+            // Determine priority
+            if (content.includes('crash') || content.includes('data loss') || content.includes('security') || content.includes('critical')) {
+              priority = 'Urgent';
+            } else if (content.includes('broken') || content.includes('major') || content.includes('urgent') || content.includes('blocking')) {
+              priority = 'High';
+            } else if (content.includes('cosmetic') || content.includes('minor') || content.includes('nice to have')) {
+              priority = 'Low';
+            }
+            
+            // Determine effort
+            if (content.includes('feature') || content.includes('implementation') || content.includes('architecture')) {
+              effort = 'High';
+            } else if (content.includes('fix') || content.includes('update') || content.includes('change')) {
+              effort = 'Medium';
+            }
+            
+            // Determine type label
+            const existingLabels = issue.labels.map(l => l.name);
+            if (!existingLabels.includes('bug') && !existingLabels.includes('enhancement') && !existingLabels.includes('question')) {
+              if (content.includes('bug') || content.includes('error') || content.includes('fail') || content.includes('broken')) {
+                typeLabel = 'bug';
+              } else if (content.includes('feature') || content.includes('enhancement') || content.includes('add')) {
+                typeLabel = 'enhancement';
+              } else if (content.includes('question') || content.includes('how to') || content.includes('help')) {
+                typeLabel = 'question';
+              }
+            }
+            
+            core.setOutput('priority', priority);
+            core.setOutput('effort', effort);
+            core.setOutput('typeLabel', typeLabel || '');
+            
+            console.log(`Triage results: priority=${priority}, effort=${effort}, type=${typeLabel}`);
+
+      - name: Add Type Label
+        if: steps.triage.outputs.typeLabel != '' && steps.check-labels.outputs.result != 'skip'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [steps.triage.outputs.typeLabel]
+            });
+
+      - name: Set Priority and Effort Fields
+        if: steps.check-labels.outputs.result != 'skip'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const priority = steps.triage.outputs.priority;
+            const effort = steps.triage.outputs.effort;
+            
+            // Field IDs from organization
+            const PRIORITY_FIELD_ID = 46329093;
+            const EFFORT_FIELD_ID = 46329096;
+            
+            try {
+              // Set both fields via REST API
+              await github.rest.request('POST /repos/{owner}/{repo}/issues/{issue_number}/issue-field-values', {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                issue_field_values: [
+                  {
+                    field_id: PRIORITY_FIELD_ID,
+                    value: priority
+                  },
+                  {
+                    field_id: EFFORT_FIELD_ID,
+                    value: effort
+                  }
+                ]
+              });
+              
+              console.log(`Set priority to ${priority} and effort to ${effort}`);
+            } catch (error) {
+              console.log(`Could not set issue fields: ${error.message}`);
+              console.log('Issue fields may not be enabled for this organization');
+            }
