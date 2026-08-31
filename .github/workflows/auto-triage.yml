@@ -178,3 +178,49 @@ jobs:
               console.log(`Could not set issue fields: ${error.message}`);
               console.log('Issue fields may not be enabled for this organization');
             }
+            
+            // Build comment explaining triage decisions
+            let comment = '**🤖 Auto-Triage Summary**\n\n';
+            
+            // Priority reasoning
+            if (priority === 'Urgent') {
+              comment += `- **Priority: Urgent** - Detected critical indicators (crash, data loss, security, or blocking issue)\n`;
+            } else if (priority === 'High') {
+              comment += `- **Priority: High** - Found major impact keywords (broken, major, urgent, blocking, no workaround)\n`;
+            } else if (priority === 'Medium') {
+              comment += `- **Priority: Medium** - Standard issue with moderate impact or community/server context\n`;
+            } else {
+              comment += `- **Priority: Low** - Minor or cosmetic issue with minimal impact\n`;
+            }
+            
+            // Effort reasoning (not for version updates)
+            if (!isVersionUpdate) {
+              if (effort === 'High') {
+                comment += `- **Effort: High** - Identified as feature work or significant implementation\n`;
+              } else if (effort === 'Medium') {
+                comment += `- **Effort: Medium** - Requires code changes, updates, or modifications\n`;
+              } else {
+                comment += `- **Effort: Low** - Simple fix or minor change expected\n`;
+              }
+              
+              // Type label reasoning
+              if (typeLabel) {
+                comment += `- **Type: ${typeLabel}** - Classified based on issue content and keywords\n`;
+              }
+            } else {
+              comment += `- **Type: Version Update** - Update request triaged based on reason provided\n`;
+            }
+            
+            // Note about user input
+            if (userPriority || userEffort) {
+              comment += `\n*Note: Your input was considered but adjusted based on independent analysis.*`;
+            }
+            
+            // Add comment to issue
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+            console.log('Added triage summary comment');
