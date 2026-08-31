@@ -52,9 +52,9 @@ jobs:
               // Analyze reason to determine priority
               if (reason.includes('crash') || reason.includes('security') || reason.includes('critical') || reason.includes('broken') || reason.includes('urgent')) {
                 priority = 'Urgent';
-              } else if (reason.includes('needed') || reason.includes('required') || reason.includes('must') || reason.includes('production')) {
+              } else if (reason.includes('needed') || reason.includes('required') || reason.includes('must') || reason.includes('production') || reason.includes('event') || reason.includes('integral') || reason.includes('dependent') || reason.includes('network') || reason.includes('community')) {
                 priority = 'High';
-              } else if (reason.includes('community') || reason.includes('server') || reason.includes('network')) {
+              } else if (reason.includes('server') || reason.includes('want') || reason.includes('like')) {
                 priority = 'Medium';
               } else {
                 priority = 'Low';
@@ -82,7 +82,7 @@ jobs:
               // Determine priority based on content analysis
               if (content.includes('crash') || content.includes('data loss') || content.includes('security') || content.includes('critical') || content.includes('server crash')) {
                 priority = 'Urgent';
-              } else if (content.includes('broken') || content.includes('major') || content.includes('urgent') || content.includes('blocking') || content.includes('no workaround')) {
+              } else if (content.includes('broken') || content.includes('major') || content.includes('urgent') || content.includes('blocking') || content.includes('no workaround') || content.includes('event') || content.includes('integral') || content.includes('dependent')) {
                 priority = 'High';
               } else if (content.includes('cosmetic') || content.includes('minor') || content.includes('nice to have') || content.includes('low priority')) {
                 priority = 'Low';
