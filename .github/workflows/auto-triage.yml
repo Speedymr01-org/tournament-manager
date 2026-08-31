@@ -57,7 +57,7 @@ jobs:
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer 0845ea0da0a241b99a717ecb662adff9.1TQgxY3KGyf3NkmMUIsrR7QF'
+                    'Authorization': 'Bearer ${{ secrets.OLLAMA_API_KEY }}'
                   },
                   body: JSON.stringify({
                     model: 'gpt-oss:120b',
