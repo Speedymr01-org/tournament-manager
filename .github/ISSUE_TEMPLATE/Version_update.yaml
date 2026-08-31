@@ -27,8 +27,8 @@ body:
       description: Why do you need this update? This helps us prioritize.
       placeholder: |
         e.g., "Running a paper 1.21.4 server for my survival community" or "Need this for my competitive minigame network"
-      validations:
-        required: true
+    validations:
+      required: true
 
   - type: textarea
     id: notes
