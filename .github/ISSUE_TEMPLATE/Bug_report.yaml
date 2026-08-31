@@ -76,3 +76,28 @@ body:
       placeholder: Optional details...
     validations:
       required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How urgent is this bug? (The triage bot will verify this independently)
+      options:
+        - Low - Minor inconvenience
+        - Medium - Affects functionality but workaround exists
+        - High - Major feature broken, no workaround
+        - Urgent - Server crash, data loss, security issue
+    validations:
+      required: false
+
+  - type: dropdown
+    id: effort
+    attributes:
+      label: Estimated Effort
+      description: How complex do you think this fix would be? (The triage bot will verify this independently)
+      options:
+        - Low - Simple fix
+        - Medium - Moderate changes needed
+        - High - Significant work required
+    validations:
+      required: false

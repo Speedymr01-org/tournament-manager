@@ -1,5 +1,5 @@
 name: Auto-Triage Issues
-description: Automatically assesses issues and sets Priority and Effort fields (skips Version Update issues)
+description: Automatically assesses issues and sets Priority and Effort fields
 
 on:
   issues:
@@ -25,12 +25,7 @@ jobs:
           script: |
             const issue = context.payload.issue;
             const labels = issue.labels.map(l => l.name);
-            
-            // Skip if has Version Update label
-            if (labels.includes('Version Update')) {
-              console.log('Issue has Version Update label, skipping triage');
-              return;
-            }
+            const isVersionUpdate = labels.includes('Version Update');
             
             const title = issue.title.toLowerCase();
             const body = (issue.body || '').toLowerCase();
@@ -40,37 +35,108 @@ jobs:
             let effort = 'Low';
             let typeLabel = null;
             
-            // Determine priority
-            if (content.includes('crash') || content.includes('data loss') || content.includes('security') || content.includes('critical')) {
-              priority = 'Urgent';
-            } else if (content.includes('broken') || content.includes('major') || content.includes('urgent') || content.includes('blocking')) {
-              priority = 'High';
-            } else if (content.includes('cosmetic') || content.includes('minor') || content.includes('nice to have')) {
-              priority = 'Low';
-            }
+            // Extract user-selected priority/effort from form if present
+            const userPriorityMatch = body.match(/### priority\n\n(.+)/i);
+            const userEffortMatch = body.match(/### effort\n\n(.+)/i);
+            const userPriority = userPriorityMatch ? userPriorityMatch[1].trim().toLowerCase() : null;
+            const userEffort = userEffortMatch ? userEffortMatch[1].trim().toLowerCase() : null;
             
-            // Determine effort
-            if (content.includes('feature') || content.includes('implementation') || content.includes('architecture')) {
-              effort = 'High';
-            } else if (content.includes('fix') || content.includes('update') || content.includes('change')) {
-              effort = 'Medium';
-            }
+            // Extract reason field for version updates
+            const reasonMatch = body.match(/### reason for update\n\n(.+)/i);
+            const reason = reasonMatch ? reasonMatch[1].trim().toLowerCase() : '';
             
-            // Determine type label
-            if (!labels.includes('bug') && !labels.includes('enhancement') && !labels.includes('question')) {
-              if (content.includes('bug') || content.includes('error') || content.includes('fail') || content.includes('broken')) {
-                typeLabel = 'bug';
-              } else if (content.includes('feature') || content.includes('enhancement') || content.includes('add')) {
-                typeLabel = 'enhancement';
-              } else if (content.includes('question') || content.includes('how to') || content.includes('help')) {
-                typeLabel = 'question';
+            if (isVersionUpdate) {
+              // VERSION UPDATE: Only set priority based on reason
+              console.log('Processing Version Update issue');
+              
+              // Analyze reason to determine priority
+              if (reason.includes('crash') || reason.includes('security') || reason.includes('critical') || reason.includes('broken') || reason.includes('urgent')) {
+                priority = 'Urgent';
+              } else if (reason.includes('needed') || reason.includes('required') || reason.includes('must') || reason.includes('production')) {
+                priority = 'High';
+              } else if (reason.includes('community') || reason.includes('server') || reason.includes('network')) {
+                priority = 'Medium';
+              } else {
+                priority = 'Low';
               }
+              
+              // Consider user priority as a hint, but don't blindly trust it
+              if (userPriority) {
+                const priorityOrder = ['urgent', 'high', 'medium', 'low'];
+                const userIdx = priorityOrder.indexOf(userPriority);
+                const currentIdx = priorityOrder.indexOf(priority);
+                
+                // If user says higher than we determined, consider it but cap at one level up
+                if (userIdx < currentIdx) {
+                  priority = priorityOrder[Math.max(0, currentIdx - 1)];
+                  console.log(`User suggested ${userPriority}, adjusted to ${priority}`);
+                }
+              }
+              
+              console.log(`Version Update triage: priority=${priority} (reason: ${reason.substring(0, 50)}...)`);
+              
+            } else {
+              // BUG/FEATURE: Set both priority and effort
+              console.log('Processing Bug/Feature issue');
+              
+              // Determine priority based on content analysis
+              if (content.includes('crash') || content.includes('data loss') || content.includes('security') || content.includes('critical') || content.includes('server crash')) {
+                priority = 'Urgent';
+              } else if (content.includes('broken') || content.includes('major') || content.includes('urgent') || content.includes('blocking') || content.includes('no workaround')) {
+                priority = 'High';
+              } else if (content.includes('cosmetic') || content.includes('minor') || content.includes('nice to have') || content.includes('low priority')) {
+                priority = 'Low';
+              }
+              
+              // Consider user priority as a hint, but don't blindly trust it
+              if (userPriority) {
+                const priorityOrder = ['urgent', 'high', 'medium', 'low'];
+                const userIdx = priorityOrder.indexOf(userPriority);
+                const currentIdx = priorityOrder.indexOf(priority);
+                
+                // If user says higher than we determined, consider it but cap at one level up
+                if (userIdx < currentIdx) {
+                  priority = priorityOrder[Math.max(0, currentIdx - 1)];
+                  console.log(`User suggested ${userPriority}, adjusted to ${priority}`);
+                }
+              }
+              
+              // Determine effort based on content analysis
+              if (content.includes('feature') || content.includes('implementation') || content.includes('architecture') || content.includes('new feature')) {
+                effort = 'High';
+              } else if (content.includes('fix') || content.includes('update') || content.includes('change') || content.includes('modify')) {
+                effort = 'Medium';
+              }
+              
+              // Consider user effort as a hint, but don't blindly trust it
+              if (userEffort) {
+                const effortOrder = ['high', 'medium', 'low'];
+                const userIdx = effortOrder.indexOf(userEffort);
+                const currentIdx = effortOrder.indexOf(effort);
+                
+                // If user says higher than we determined, consider it but cap at one level up
+                if (userIdx < currentIdx) {
+                  effort = effortOrder[Math.max(0, currentIdx - 1)];
+                  console.log(`User suggested effort ${userEffort}, adjusted to ${effort}`);
+                }
+              }
+              
+              // Determine type label
+              if (!labels.includes('bug') && !labels.includes('enhancement') && !labels.includes('question')) {
+                if (content.includes('bug') || content.includes('error') || content.includes('fail') || content.includes('broken')) {
+                  typeLabel = 'bug';
+                } else if (content.includes('feature') || content.includes('enhancement') || content.includes('add')) {
+                  typeLabel = 'enhancement';
+                } else if (content.includes('question') || content.includes('how to') || content.includes('help')) {
+                  typeLabel = 'question';
+                }
+              }
+              
+              console.log(`Bug/Feature triage: priority=${priority}, effort=${effort}, type=${typeLabel}`);
             }
             
-            console.log(`Triage: priority=${priority}, effort=${effort}, type=${typeLabel}`);
-            
-            // Add type label if determined
-            if (typeLabel) {
+            // Add type label if determined (not for version updates)
+            if (typeLabel && !isVersionUpdate) {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -80,27 +146,34 @@ jobs:
               console.log(`Added label: ${typeLabel}`);
             }
             
-            // Set Priority and Effort fields via REST API
+            // Set fields via REST API
             const PRIORITY_FIELD_ID = 46329093;
             const EFFORT_FIELD_ID = 46329096;
             
             try {
+              const fieldValues = [
+                {
+                  field_id: PRIORITY_FIELD_ID,
+                  value: priority
+                }
+              ];
+              
+              // Only set effort for non-version-update issues
+              if (!isVersionUpdate) {
+                fieldValues.push({
+                  field_id: EFFORT_FIELD_ID,
+                  value: effort
+                });
+              }
+              
               await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/issue-field-values', {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                issue_field_values: [
-                  {
-                    field_id: PRIORITY_FIELD_ID,
-                    value: priority
-                  },
-                  {
-                    field_id: EFFORT_FIELD_ID,
-                    value: effort
-                  }
-                ]
+                issue_field_values: fieldValues
               });
-              console.log(`Set priority to ${priority} and effort to ${effort}`);
+              
+              console.log(`Set priority to ${priority}${!isVersionUpdate ? ` and effort to ${effort}` : ''}`);
             } catch (error) {
               console.log(`Could not set issue fields: ${error.message}`);
               console.log('Issue fields may not be enabled for this organization');
