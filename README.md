@@ -29,6 +29,7 @@ Minigame providers (Spleef, TeamDeathmatch, etc.) are discovered at runtime — 
 
 | Version | Changes |
 |---------|---------|
+| **0.4.0** | Added **bStats** metrics with a `metrics-enabled` opt-out in `config.yml` and a `minigame_providers` custom chart. Metrics failures no longer prevent the plugin from enabling, and metrics are shut down cleanly on disable. |
 | **0.3.0** | Added **verbose logging** (configurable via `config.yml`) for debugging tournament lifecycle events. Added **Start Next Match** button in admin GUI. Fixed admin GUI close behavior to navigate to parent menu instead of closing inventory. Manage Tournaments list now navigates to main menu when barrier item is clicked. Tie matches now reset to `PENDING` instead of `FINISHED` so they can be replayed. Fixed `clearMatches` to use a mutable list. Added support for **2-team** tournaments. Fixed duplicate item sets in `renderCreateMenu`. Fixed render order so GUI buttons aren't cleared by `fillBorders`. Fixed `saveDefaultConfig` crash by shipping a default `config.yml`. Added **Modrinth publishing** via GitHub Actions workflow. |
 
 ## Supported Formats
@@ -54,7 +55,15 @@ If a player disconnects while their match is in progress, their team **forfeits*
 
 | Setting | Default | Description |
 |---------|---------|-------------|
+| `metrics-enabled` | `true` | Anonymous bStats usage statistics; set to `false` to opt out |
 | `verbose-logging` | `true` | Enables detailed console output for debugging tournament lifecycle events |
+
+## Metrics
+
+This plugin uses [bStats](https://bstats.org/) (plugin id `33302`) to collect anonymous usage
+statistics such as server software, Java version, installed provider count, and which features are
+enabled. No player names or UUIDs are collected. You can opt out by setting `metrics-enabled: false`
+in `config.yml`.
 
 ## GUIs
 

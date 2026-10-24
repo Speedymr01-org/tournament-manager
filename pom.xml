@@ -7,7 +7,7 @@
     <groupId>com.tdm</groupId>
 
     <artifactId>tournament-manager</artifactId>
-    <version>0.3.1</version>
+    <version>0.4.0</version>
 
     <packaging>jar</packaging>
 
@@ -27,7 +27,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>[26.1.2.build,)</version>
+            <version>26.1.2.build.60-stable</version>
             <scope>provided</scope>
         </dependency>
 
@@ -64,6 +64,7 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.5.3</version>
                 <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
                     <relocations>
                         <relocation>
                             <pattern>org.bstats</pattern>

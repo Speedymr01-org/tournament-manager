@@ -6,11 +6,11 @@ import com.tdm.tournament.gui.AdminGUI;
 import com.tdm.tournament.gui.PlayerGUI;
 import com.tdm.tournament.listener.ConnectionListener;
 import com.tdm.tournament.listener.MatchEndListener;
+import com.tdm.tournament.metrics.MetricsService;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -38,6 +38,7 @@ public class TournamentPlugin extends JavaPlugin implements Listener {
     private TournamentManager tournamentManager;
     private AdminGUI adminGUI;
     private PlayerGUI playerGUI;
+    private MetricsService metricsService;
     private final List<MinigameProvider> providers = new ArrayList<>();
 
     // GUI click handlers: player UUID -> handler (returns true if handled)
@@ -49,12 +50,12 @@ public class TournamentPlugin extends JavaPlugin implements Listener {
     public void onEnable() {
         saveDefaultConfig();
 
-        // bStats
-        int pluginId = 33302;
-        new Metrics(this, pluginId);
-
         // Discover minigame providers via ServicesManager
         discoverProviders();
+
+        // bStats (after provider discovery so the provider-count chart sees them)
+        this.metricsService = new MetricsService(this);
+        this.metricsService.start();
 
         this.tournamentManager = new TournamentManager(this, providers);
         this.adminGUI = new AdminGUI(this, tournamentManager, providers);
@@ -79,6 +80,9 @@ public class TournamentPlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        if (metricsService != null) {
+            metricsService.shutdown();
+        }
         HandlerList.unregisterAll((Listener) this);
         guiHandlers.clear();
         chatInputHandlers.clear();
