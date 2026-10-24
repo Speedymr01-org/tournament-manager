@@ -29,6 +29,7 @@ Minigame providers (Spleef, TeamDeathmatch, etc.) are discovered at runtime — 
 
 | Version | Changes |
 |---------|---------|
+| **0.5.0** | The `minigame_providers` bStats chart is now a **drilldown pie**: each slice is an installed provider's name, and expanding it shows the provider versions in use (like the Java Version / Operating System charts). Works for third-party providers, including ones with custom names or versions. Added optional `MinigameProvider#getVersion()` (default method — existing providers compile and run unchanged). Provider discovery now skips a misbehaving provider instead of failing. |
 | **0.4.0** | Added **bStats** metrics with a `metrics-enabled` opt-out in `config.yml` and a `minigame_providers` custom chart. Metrics failures no longer prevent the plugin from enabling, and metrics are shut down cleanly on disable. |
 | **0.3.0** | Added **verbose logging** (configurable via `config.yml`) for debugging tournament lifecycle events. Added **Start Next Match** button in admin GUI. Fixed admin GUI close behavior to navigate to parent menu instead of closing inventory. Manage Tournaments list now navigates to main menu when barrier item is clicked. Tie matches now reset to `PENDING` instead of `FINISHED` so they can be replayed. Fixed `clearMatches` to use a mutable list. Added support for **2-team** tournaments. Fixed duplicate item sets in `renderCreateMenu`. Fixed render order so GUI buttons aren't cleared by `fillBorders`. Fixed `saveDefaultConfig` crash by shipping a default `config.yml`. Added **Modrinth publishing** via GitHub Actions workflow. |
 
@@ -61,9 +62,9 @@ If a player disconnects while their match is in progress, their team **forfeits*
 ## Metrics
 
 This plugin uses [bStats](https://bstats.org/) (plugin id `33302`) to collect anonymous usage
-statistics such as server software, Java version, installed provider count, and which features are
-enabled. No player names or UUIDs are collected. You can opt out by setting `metrics-enabled: false`
-in `config.yml`.
+statistics such as server software, Java version, which minigame providers are installed (name and
+version), and which features are enabled. No player names or UUIDs are collected. You can opt out by
+setting `metrics-enabled: false` in `config.yml`.
 
 ## GUIs
 
@@ -133,6 +134,12 @@ Register it in your plugin's `onEnable()`:
 getServer().getServicesManager().register(
     MinigameProvider.class, myProvider, this, ServicePriority.Normal
 );
+```
+
+Optionally report your own version (used by the anonymous provider chart). If you don't override it,
+TournamentManager uses the version of the plugin that registered the provider:
+```java
+@Override public String getVersion() { return getPluginMeta().getVersion(); }
 ```
 
 When the game ends, fire a `MatchCompleteEvent`:

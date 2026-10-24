@@ -31,6 +31,21 @@ public interface MinigameProvider {
     /** Human-readable label shown in GUIs, e.g. "Spleef" or "TDM". */
     String getDisplayName();
 
+    /**
+     * Version of this provider implementation.
+     *
+     * <p>Shown as the drilldown slice under this provider's name in the anonymous
+     * bStats provider chart. Custom providers whose version differs from the
+     * plugin that registers them can override this. Returning {@code null} or a
+     * blank string makes TournamentManager fall back to the version of the
+     * plugin that registered the provider, and finally to {@code "unknown"}.</p>
+     *
+     * @return provider version, or {@code null} to use the registering plugin's version
+     */
+    default String getVersion() {
+        return null;
+    }
+
     /** Icon shown in the admin GUI for this provider. */
     Material getIcon();
 

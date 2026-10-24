@@ -40,6 +40,8 @@ public class TournamentPlugin extends JavaPlugin implements Listener {
     private PlayerGUI playerGUI;
     private MetricsService metricsService;
     private final List<MinigameProvider> providers = new ArrayList<>();
+    // Provider instance -> version of the plugin that registered it
+    private final Map<MinigameProvider, String> providerVersions = new HashMap<>();
 
     // GUI click handlers: player UUID -> handler (returns true if handled)
     private final Map<UUID, BiFunction<Player, Integer, Boolean>> guiHandlers = new HashMap<>();
@@ -87,6 +89,7 @@ public class TournamentPlugin extends JavaPlugin implements Listener {
         guiHandlers.clear();
         chatInputHandlers.clear();
         providers.clear();
+        providerVersions.clear();
         getLogger().info("TournamentManager disabled!");
     }
 
@@ -94,13 +97,37 @@ public class TournamentPlugin extends JavaPlugin implements Listener {
 
     private void discoverProviders() {
         providers.clear();
-        var registrations = Bukkit.getServicesManager().getRegistrations(MinigameProvider.class);
-        for (var reg : registrations) {
+        providerVersions.clear();
+        for (var reg : Bukkit.getServicesManager().getRegistrations(MinigameProvider.class)) {
             MinigameProvider provider = reg.getProvider();
-            if (provider != null && provider.isEnabled()) {
-                providers.add(provider);
-                getLogger().info("Discovered minigame provider: " + provider.getPluginName());
+            if (provider == null) {
+                continue;
             }
+            try {
+                if (!provider.isEnabled()) {
+                    continue;
+                }
+                providers.add(provider);
+                providerVersions.put(provider, resolveVersion(reg.getPlugin()));
+                getLogger().info("Discovered minigame provider: " + provider.getPluginName());
+            } catch (Exception e) {
+                // A misbehaving third-party provider must not break discovery.
+                getLogger().warning("Skipping minigame provider "
+                        + provider.getClass().getName() + ": " + e.getMessage());
+            }
+        }
+    }
+
+    /** Version of the plugin that registered a provider, or "unknown" if unavailable. */
+    private static String resolveVersion(org.bukkit.plugin.Plugin owner) {
+        if (owner == null) {
+            return "unknown";
+        }
+        try {
+            String version = owner.getPluginMeta().getVersion();
+            return (version == null || version.isBlank()) ? "unknown" : version;
+        } catch (Exception e) {
+            return "unknown";
         }
     }
 
@@ -112,6 +139,11 @@ public class TournamentPlugin extends JavaPlugin implements Listener {
 
     public List<MinigameProvider> getProviders() {
         return Collections.unmodifiableList(providers);
+    }
+
+    /** Map of provider instance to the version of the plugin that registered it. */
+    public Map<MinigameProvider, String> getProviderVersions() {
+        return Collections.unmodifiableMap(providerVersions);
     }
 
     public AdminGUI getAdminGUI() {
